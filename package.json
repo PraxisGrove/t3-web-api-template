@@ -30,7 +30,7 @@
 		"verify": "node scripts/verify.mjs"
 	},
 	"dependencies": {
-		"@prisma/client": "^6.6.0",
+		"@prisma/client": "^7.8.0",
 		"@sentry/nextjs": "^10.63.0",
 		"@t3-oss/env-nextjs": "^0.12.0",
 		"@tanstack/react-query": "^5.69.0",
