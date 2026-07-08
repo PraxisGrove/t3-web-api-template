@@ -1,0 +1,41 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SKIP_ENV_VALIDATION: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/t3_web_api_template
+      LOG_LEVEL: info
+      NEXT_PUBLIC_APP_ENV: production
+      NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
+      NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: "0.1"
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_REQUESTS: "60"
+      RATE_LIMIT_WINDOW_SECONDS: "60"
+      SENTRY_TRACES_SAMPLE_RATE: "0.1"
+    ports:
+      - "3000:3000"
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: t3_web_api_template
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d t3_web_api_template"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

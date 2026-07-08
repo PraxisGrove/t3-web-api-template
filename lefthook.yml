@@ -1,0 +1,14 @@
+pre-commit:
+  parallel: true
+  commands:
+    format-and-lint:
+      run: pnpm check:write
+      stage_fixed: true
+    test:
+      run: pnpm test
+
+pre-push:
+  parallel: false
+  commands:
+    verify:
+      run: pnpm verify

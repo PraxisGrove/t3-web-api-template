@@ -1,0 +1,56 @@
+name: Feature request
+description: Suggest a capability that should be included in the template.
+title: "feature: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem would this solve for users of the template?
+      placeholder: Describe the workflow or gap.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should be added or changed?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - API
+        - Auth
+        - Database
+        - DevEx
+        - Docker
+        - Observability
+        - Security
+        - Testing
+        - UI
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What alternatives did you consider, and why is this better for the template?
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: This belongs in the reusable template, not only in one application.
+          required: true
+        - label: I searched existing issues.
+          required: true

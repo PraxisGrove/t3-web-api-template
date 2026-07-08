@@ -1,0 +1,62 @@
+name: DB Migrate
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "GitHub Environment that contains DATABASE_URL"
+        required: true
+        default: production
+        type: environment
+      confirm:
+        description: "Type migrate to confirm"
+        required: true
+        type: string
+
+concurrency:
+  group: db-migrate-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Prisma migrate deploy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SKIP_ENV_VALIDATION: "1"
+
+    steps:
+      - name: Validate confirmation
+        shell: bash
+        run: |
+          if [ "${{ inputs.confirm }}" != "migrate" ]; then
+            echo "Confirmation must be exactly: migrate" >&2
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.8.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Run migrations
+        run: pnpm db:migrate

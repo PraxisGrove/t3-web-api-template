@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: t3_web_api_template
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d t3_web_api_template"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/t3_web_api_template
+      LOG_LEVEL: info
+      NEXT_PUBLIC_APP_ENV: test
+      NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
+      NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: "0.1"
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_REQUESTS: "1000"
+      RATE_LIMIT_WINDOW_SECONDS: "60"
+      SENTRY_TRACES_SAMPLE_RATE: "0.1"
+      SKIP_ENV_VALIDATION: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.8.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Sync database schema
+        run: pnpm db:push
+
+      - name: Seed database
+        run: pnpm db:seed
+
+      - name: Verify
+        run: pnpm verify

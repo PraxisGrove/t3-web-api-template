@@ -1,0 +1,49 @@
+name: Template improvement
+description: Propose a change to structure, defaults, docs, or conventions.
+title: "template: "
+labels:
+  - template
+body:
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+      description: What does the template currently do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: improvement
+    attributes:
+      label: Proposed improvement
+      description: What should change?
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: Why is this a better default for new projects?
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - label: This changes the generated developer experience.
+        - label: This changes runtime behavior.
+        - label: This changes CI, security, or deployment behavior.
+        - label: This is documentation-only.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: I considered whether this should be optional instead of a default.
+          required: true
+        - label: I searched existing issues.
+          required: true

@@ -1,0 +1,9 @@
+.git
+.github
+.next
+.env
+.env*.local
+coverage
+generated
+node_modules
+README.md

@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a reproducible problem in this template.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this for reproducible problems in the template itself.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+      placeholder: Describe the bug in one or two sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Provide the shortest path to reproduce the problem.
+      placeholder: |
+        1. Run `pnpm install`
+        2. Run `pnpm ...`
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error output
+      description: Paste relevant output only.
+      render: shell
+
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: "26.x"
+
+  - type: input
+    id: pnpm
+    attributes:
+      label: pnpm version
+      placeholder: "11.x"
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submit checks
+      options:
+        - label: I searched existing issues.
+          required: true
+        - label: I can reproduce this from a fresh clone of the template.
+          required: true
