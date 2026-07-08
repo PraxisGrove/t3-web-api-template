@@ -9,4 +9,5 @@ Tag format:
 
 ## Unreleased
 
+- Tune Dependabot to only open npm version-update PRs for major dependency upgrades.
 - Initial production-oriented T3 web API template.

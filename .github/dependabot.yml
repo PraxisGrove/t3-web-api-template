@@ -8,18 +8,23 @@ updates:
       day: monday
       time: "09:00"
       timezone: Asia/Shanghai
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 3
     groups:
-      production-dependencies:
+      production-major-dependencies:
         dependency-type: production
         update-types:
-          - minor
-          - patch
-      development-dependencies:
+          - major
+      development-major-dependencies:
         dependency-type: development
         update-types:
-          - minor
-          - patch
+          - major
+    ignore:
+      # Template maintainers only review major version changes. Routine
+      # minor/patch churn is intentionally ignored for version-update PRs.
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-minor
+          - version-update:semver-patch
 
   - package-ecosystem: github-actions
     directory: /
