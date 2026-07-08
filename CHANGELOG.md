@@ -9,5 +9,6 @@ Tag format:
 
 ## Unreleased
 
+- Add REST endpoint helpers for consistent rate limiting, validation, CORS, and structured errors.
 - Tune Dependabot to only open npm version-update PRs for major dependency upgrades.
 - Initial production-oriented T3 web API template.

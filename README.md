@@ -110,6 +110,8 @@ curl http://localhost:3000/api/v1/openapi.json
 
 Mobile apps and other non-TypeScript clients should use the OpenAPI document as the source of truth for REST request and response shapes.
 
+REST routes should use `createRestQuery` or `createRestMutation` from `src/server/rest/endpoint.ts`. Those helpers keep rate limiting, JSON parsing, `zod` validation, CORS, structured errors, and unexpected-error handling consistent across versioned REST endpoints.
+
 ## Project structure
 
 ```text
@@ -130,6 +132,8 @@ src/
       logger.ts
     openapi/
       document.ts
+    rest/
+      endpoint.ts
     services/
       post.ts
       post.schema.ts

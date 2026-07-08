@@ -34,9 +34,9 @@ export function preflight(request: Request) {
 	});
 }
 
-export function withCors<TBody>(
+export function withCors<TResponse extends Response>(
 	request: Request,
-	response: NextResponse<TBody>,
+	response: TResponse,
 ) {
 	const headers = getCorsHeaders(request);
 
