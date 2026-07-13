@@ -52,16 +52,16 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.5",
 		"@tailwindcss/postcss": "^4.0.15",
-		"@types/node": "^20.14.10",
+		"@types/node": "^26.1.1",
 		"@types/react": "^19.0.0",
 		"@types/react-dom": "^19.0.0",
 		"dotenv": "^17.4.2",
 		"lefthook": "^2.1.9",
 		"postcss": "^8.5.3",
-		"prisma": "^6.6.0",
+		"prisma": "^7.8.0",
 		"tailwindcss": "^4.0.15",
 		"tsx": "^4.23.0",
-		"typescript": "^5.8.2",
+		"typescript": "^7.0.2",
 		"vitest": "^4.1.10"
 	},
 	"ct3aMetadata": {
