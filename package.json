@@ -30,7 +30,7 @@
 		"verify": "node scripts/verify.mjs"
 	},
 	"dependencies": {
-		"@prisma/client": "^6.6.0",
+		"@prisma/client": "^7.8.0",
 		"@sentry/nextjs": "^10.63.0",
 		"@t3-oss/env-nextjs": "^0.12.0",
 		"@tanstack/react-query": "^5.69.0",
@@ -39,7 +39,7 @@
 		"@trpc/server": "^11.0.0",
 		"@upstash/ratelimit": "^2.0.8",
 		"@upstash/redis": "^1.38.0",
-		"next": "^15.2.3",
+		"next": "^16.2.10",
 		"pino": "^10.3.1",
 		"posthog-js": "^1.398.0",
 		"posthog-node": "^5.39.4",
@@ -47,7 +47,7 @@
 		"react-dom": "^19.0.0",
 		"server-only": "^0.0.1",
 		"superjson": "^2.2.1",
-		"zod": "^3.24.2"
+		"zod": "^4.4.3"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.5",
