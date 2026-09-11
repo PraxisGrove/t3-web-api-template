@@ -3,10 +3,14 @@
  * for Docker builds.
  */
 import "./src/env.js";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 /** @type {import("next").NextConfig} */
 const config = {
+	reactCompiler: true,
+	experimental: {
+		turbopackRustReactCompiler: true,
+	},
 	async headers() {
 		return [
 			{
