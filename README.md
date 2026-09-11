@@ -18,7 +18,7 @@ Production-oriented T3 starter for a split-platform setup:
 - Vercel deployment configuration is included
 - Local Git hooks use `lefthook`
 - Docker includes Postgres-only and full app compose paths
-- REST security includes CORS, security headers, and rate limiting
+- API security includes CORS, security headers, and REST/tRPC rate limiting
 - Auth is intentionally not preinstalled so you can add `Clerk` later
 
 ## Why this template exists
@@ -63,7 +63,7 @@ pnpm dlx create-t3-app@latest t3-web-api-template \
 - `Sentry` for error and performance reporting
 - `pino` for structured server logs
 - `PostHog` for optional product analytics
-- GitHub Actions for install, database sync, lint, typecheck, and build
+- GitHub Actions for install, migrations, dependency audit, lint, typecheck, build, and container smoke tests
 - Dependabot for dependency, GitHub Actions, and Docker image updates
 - CodeQL for JavaScript and TypeScript security scanning
 - GitHub Issue and PR templates for template maintenance
@@ -74,7 +74,7 @@ pnpm dlx create-t3-app@latest t3-web-api-template \
 - Manual database migration workflow for production changes
 - `lefthook` for local pre-commit and pre-push checks
 - Docker Compose for local Postgres and optional full app containers
-- Security headers, CORS allowlist, and REST rate limiting
+- Security headers, CORS allowlist, and REST/tRPC rate limiting
 - No built-in auth package
 
 ## Included examples
@@ -159,10 +159,10 @@ pnpm docker:db
 
 You can also use your own local Postgres.
 
-3. Create schema:
+3. Apply the committed initial migration:
 
 ```bash
-pnpm db:push
+pnpm db:migrate
 pnpm db:seed
 ```
 
@@ -197,6 +197,30 @@ Reset local database:
 pnpm db:reset
 ```
 
+## React Doctor
+
+[React Doctor](https://github.com/millionco/react-doctor) is installed as a project dev dependency for React and Next.js diagnostics:
+
+```bash
+pnpm react-doctor
+pnpm react-doctor --verbose
+```
+
+The command scans the full project without prompts, remote scoring, or telemetry. Socket.dev supply-chain checks are disabled for this local scan; use `pnpm audit` for dependency vulnerabilities. React Doctor is an optional diagnostic command, separate from `pnpm verify` and Git hooks.
+
+## Database migration workflow
+
+`prisma/migrations/20260910000000_init` creates the example Post table. Keep committed migrations as the source of truth:
+
+- New clone or empty database: `pnpm db:migrate`, then optionally `pnpm db:seed`.
+- Schema development: edit `prisma/schema.prisma`, run `pnpm db:generate --name your_change`, and commit the generated migration.
+- Production: run `pnpm db:migrate` through the separate migration workflow.
+- `pnpm db:push` remains available for disposable prototyping; it does not create migration history.
+
+If you previously initialized a database with `db:push`, do not reset it or blindly apply the initial migration. Compare its schema with `prisma/schema.prisma` first, including any downstream customizations. Only if it already matches this initial migration, baseline it with `pnpm exec prisma migrate resolve --applied 20260910000000_init`, then use `pnpm db:migrate`. A customized database needs its own reviewed baseline.
+
+The seed only inserts a demo post into an empty table and uses the normal ID sequence. Re-running it does not overwrite existing posts.
+
 ## Docker
 
 This template provides two Docker paths.
@@ -205,7 +229,7 @@ Recommended local development path:
 
 ```bash
 pnpm docker:db
-pnpm db:push
+pnpm db:migrate
 pnpm dev
 ```
 
@@ -217,7 +241,9 @@ Optional full container path:
 pnpm docker:app
 ```
 
-This builds the Next.js standalone output and runs it with Postgres. Use this when you want to test container packaging or self-hosted deployment behavior.
+This builds the Next.js standalone output, waits for Postgres, runs the separate `migrate` service, and starts the app only after migrations succeed. A fresh Docker volume needs no manual schema setup. The migration image includes Prisma tooling; the app image runs as a non-root user. Use this path to test container packaging or self-hosted deployment behavior.
+
+For production, run the migration image as a controlled release step before starting the app. Migrations never run inside `next build` or the app entrypoint. Public client environment variables must be supplied at build time when customizing the image; Docker runtime values do not replace values already embedded in browser bundles.
 
 The `docker:*` scripts use `scripts/docker-compose.sh`, which supports both `docker compose` and `docker-compose`.
 
@@ -260,8 +286,8 @@ This template includes secure defaults for the web and REST boundary:
 - Global security headers are set in `next.config.js`.
 - REST CORS defaults to same-origin/browserless requests.
 - REST responses use a consistent error shape.
-- REST endpoints are rate limited.
-- Rate limiting uses Upstash Redis when configured and falls back to in-memory limits locally.
+- REST endpoints and all tRPC public procedures are rate limited. Each operation in a tRPC batch counts separately, including server-side callers.
+- Both API transports use the same limiter implementation: optional Upstash Redis, with a bounded in-memory fallback. Quotas are separate per route/procedure and client identity.
 
 Security envs:
 
@@ -270,11 +296,19 @@ ALLOWED_ORIGINS="https://app.example.com,https://admin.example.com"
 RATE_LIMIT_ENABLED="true"
 RATE_LIMIT_REQUESTS="60"
 RATE_LIMIT_WINDOW_SECONDS="60"
+RATE_LIMIT_MAX_BUCKETS="10000"
+RATE_LIMIT_IP_HEADER="none"
 UPSTASH_REDIS_REST_URL=""
 UPSTASH_REDIS_REST_TOKEN=""
 ```
 
-Use Redis-backed rate limiting for production. The in-memory fallback is for local development and single-process deployments only.
+With `RATE_LIMIT_IP_HEADER=none` (the default), forwarding headers are ignored and clients share one quota per route/procedure. Next.js Request does not provide a trusted socket address, so the template does not guess an IP from client-controlled headers. Local development and direct Docker access work without proxy configuration.
+
+For per-client quotas, set `RATE_LIMIT_IP_HEADER` to `x-forwarded-for`, `x-real-ip`, or `cf-connecting-ip` only when a trusted ingress **overwrites** that header with one validated client IP and prevents bypassing the ingress. Missing, malformed, or comma-separated values use the shared `unknown` identity; there is no fallback to another header. For Vercel, see the deployment guide. An app behind an append-only forwarding chain needs ingress normalization before enabling this setting.
+
+The memory fallback removes expired entries during subsequent requests and holds at most `RATE_LIMIT_MAX_BUCKETS` entries across all routes. When full, it rejects new identities until space expires, preserving existing quotas. It remains per process: use the optional Redis backend for multiple replicas or serverless deployments. Backend errors and SDK timeouts do not execute the handler. Configure both Upstash values together.
+
+The example APIs remain unauthenticated. Rate limiting is an abuse control; downstream apps should add their own authentication and authorization when exposing private data or actions.
 
 ## CI
 
@@ -284,9 +318,12 @@ It runs on pushes to `main` and pull requests:
 
 - `pnpm install --frozen-lockfile`
 - `prisma generate`
-- `pnpm db:push` against a Postgres service
+- `pnpm db:migrate` twice against an empty Postgres service, checking repeatability and schema drift
 - `pnpm db:seed`
+- `pnpm audit --audit-level=high`
 - `pnpm verify`
+- real REST/tRPC write and read smoke tests after seeding
+- a separate Docker Compose build/start smoke test with a fresh database volume
 
 The template also includes `.github/workflows/db-migrate.yml` for manual Prisma production migrations. Configure a GitHub Environment with a `DATABASE_URL` secret, then run the workflow manually and type `migrate` to confirm.
 
@@ -300,7 +337,9 @@ Dependabot checks weekly updates for:
 - GitHub Actions used by CI
 - Docker base images
 
-Minor and patch updates are grouped to reduce noisy maintenance PRs.
+npm version-update PRs are limited to major updates. Enable Dependabot alerts and security updates in GitHub repository settings so vulnerable locked versions still receive security fixes. CI audits dependencies at high severity and above.
+
+Temporary, scoped overrides in `pnpm-workspace.yaml` patch PostCSS under Next 15 and deepmerge-ts under Prisma 6. Remove them when upstream requirements include patched versions; verify Prisma generation/migrations and the production build when changing them.
 
 ## Code Scanning
 
@@ -345,7 +384,7 @@ GitHub creates the release from `.github/workflows/release.yml` when a matching 
 
 ## Local Git Hooks
 
-`lefthook` is installed by the `prepare` script after dependencies are installed.
+`lefthook` is installed by the `prepare` script after dependencies are installed in a developer Git checkout. The template skips its hook setup in CI, containers, source ZIPs, or when `LEFTHOOK=0`.
 
 Default hooks:
 

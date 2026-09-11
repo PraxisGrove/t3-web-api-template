@@ -19,6 +19,10 @@ export const env = createEnv({
 			.transform((value) => value === "true"),
 		RATE_LIMIT_REQUESTS: z.coerce.number().int().positive().default(60),
 		RATE_LIMIT_WINDOW_SECONDS: z.coerce.number().int().positive().default(60),
+		RATE_LIMIT_MAX_BUCKETS: z.coerce.number().int().positive().default(10000),
+		RATE_LIMIT_IP_HEADER: z
+			.enum(["none", "x-forwarded-for", "x-real-ip", "cf-connecting-ip"])
+			.default("none"),
 		SENTRY_DSN: z.string().url().optional(),
 		SENTRY_ORG: z.string().optional(),
 		SENTRY_PROJECT: z.string().optional(),
@@ -63,6 +67,8 @@ export const env = createEnv({
 		RATE_LIMIT_ENABLED: process.env.RATE_LIMIT_ENABLED,
 		RATE_LIMIT_REQUESTS: process.env.RATE_LIMIT_REQUESTS,
 		RATE_LIMIT_WINDOW_SECONDS: process.env.RATE_LIMIT_WINDOW_SECONDS,
+		RATE_LIMIT_MAX_BUCKETS: process.env.RATE_LIMIT_MAX_BUCKETS,
+		RATE_LIMIT_IP_HEADER: process.env.RATE_LIMIT_IP_HEADER,
 		SENTRY_DSN: process.env.SENTRY_DSN,
 		SENTRY_ORG: process.env.SENTRY_ORG,
 		SENTRY_PROJECT: process.env.SENTRY_PROJECT,

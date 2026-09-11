@@ -42,7 +42,7 @@ This template includes:
 - global security headers
 - a default Content Security Policy
 - CORS allowlist support for REST endpoints
-- REST rate limiting with optional Redis backing
+- REST and tRPC rate limiting with explicit proxy-header trust, bounded memory, and optional Redis backing
 - structured error responses for REST endpoints
 - Dependabot dependency updates
 - CodeQL code scanning

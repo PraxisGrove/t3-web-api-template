@@ -6,8 +6,8 @@ services:
       args:
         SKIP_ENV_VALIDATION: "1"
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     environment:
       APP_ENV: production
       DATABASE_URL: postgresql://postgres:password@postgres:5432/t3_web_api_template
@@ -18,9 +18,22 @@ services:
       RATE_LIMIT_ENABLED: "true"
       RATE_LIMIT_REQUESTS: "60"
       RATE_LIMIT_WINDOW_SECONDS: "60"
+      RATE_LIMIT_IP_HEADER: "none"
       SENTRY_TRACES_SAMPLE_RATE: "0.1"
     ports:
       - "3000:3000"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/t3_web_api_template
+    restart: "no"
 
   postgres:
     image: postgres:16

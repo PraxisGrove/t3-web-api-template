@@ -41,7 +41,6 @@ jobs:
       RATE_LIMIT_REQUESTS: "1000"
       RATE_LIMIT_WINDOW_SECONDS: "60"
       SENTRY_TRACES_SAMPLE_RATE: "0.1"
-      SKIP_ENV_VALIDATION: "1"
 
     steps:
       - name: Checkout
@@ -61,14 +60,57 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Audit dependencies
+        run: pnpm audit --audit-level=high
+
       - name: Generate Prisma client
         run: pnpm exec prisma generate
 
-      - name: Sync database schema
-        run: pnpm db:push
+      - name: Apply committed migrations to an empty database
+        run: pnpm db:migrate
+
+      - name: Verify migrations can run again safely
+        run: pnpm db:migrate
+
+      - name: Check schema matches migrations
+        run: pnpm exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
 
       - name: Seed database
         run: pnpm db:seed
 
       - name: Verify
         run: pnpm verify
+
+      - name: Smoke test the production server against Postgres
+        run: |
+          pnpm start > /tmp/t3-smoke.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"; cat /tmp/t3-smoke.log' EXIT
+          node scripts/smoke-test.mjs http://127.0.0.1:3000
+
+  docker:
+    name: Docker template smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+
+      - name: Build and start the template with an empty database
+        run: docker compose -f docker-compose.app.yml up --build -d
+
+      - name: Smoke test the container
+        run: node scripts/smoke-test.mjs http://127.0.0.1:3000
+
+      - name: Container logs
+        if: always()
+        run: docker compose -f docker-compose.app.yml logs --no-color
+
+      - name: Clean up disposable containers and database
+        if: always()
+        run: docker compose -f docker-compose.app.yml down --volumes

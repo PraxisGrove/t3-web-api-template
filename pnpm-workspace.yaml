@@ -7,3 +7,9 @@ allowBuilds:
   lefthook: true
   prisma: true
   sharp: true
+
+# Security fixes for versions pinned by Next 15 and Prisma 6. Remove these
+# overrides when the upstream packages require patched versions themselves.
+overrides:
+  'next>postcss': ^8.5.28
+  '@prisma/config>deepmerge-ts': ^8.0.0

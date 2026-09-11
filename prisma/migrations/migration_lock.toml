@@ -1,0 +1,2 @@
+# Keep the migration history on the same database provider as schema.prisma.
+provider = "postgresql"

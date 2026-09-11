@@ -27,9 +27,13 @@ ALLOWED_ORIGINS="https://your-domain.com"
 RATE_LIMIT_ENABLED="true"
 RATE_LIMIT_REQUESTS="60"
 RATE_LIMIT_WINDOW_SECONDS="60"
+RATE_LIMIT_MAX_BUCKETS="10000"
+RATE_LIMIT_IP_HEADER="x-forwarded-for"
 ```
 
 `DATABASE_URL` must point to a production Postgres database. Use a provider that supports serverless Next.js workloads, such as Vercel Postgres, Neon, Supabase, or a managed Postgres service with pooling.
+
+Vercel [overwrites `x-forwarded-for` with the client IP](https://vercel.com/docs/headers/request-headers#x-forwarded-for), so this guide explicitly enables that trusted header. The portable template default remains `none`. For other ingress setups, verify header overwriting and origin access restrictions before changing it. Multi-value forwarding chains are not accepted.
 
 ## Optional Environment Variables
 
@@ -81,7 +85,7 @@ Recommended setup:
 4. Run the `DB Migrate` workflow manually.
 5. Select the environment and type `migrate` to confirm.
 
-The workflow runs `pnpm db:migrate`, which maps to `prisma migrate deploy`.
+The workflow runs `pnpm db:migrate`, which maps to `prisma migrate deploy`. The committed initial migration initializes a fresh database. For databases previously initialized with `db:push`, follow the baseline instructions in README before running this workflow.
 
 ## CORS
 
@@ -111,4 +115,4 @@ Verify:
 - `/api/v1/posts` returns JSON
 - Sentry receives errors if DSNs are configured
 - PostHog receives events if the public key is configured
-- REST rate limiting uses Upstash when Redis envs are configured
+- REST and tRPC rate limiting use Upstash when both Redis envs are configured; without Redis the limit is per process and cannot enforce a deployment-wide quota

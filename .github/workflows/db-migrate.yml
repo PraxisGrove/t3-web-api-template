@@ -32,8 +32,10 @@ jobs:
     steps:
       - name: Validate confirmation
         shell: bash
+        env:
+          MIGRATION_CONFIRM: ${{ inputs.confirm }}
         run: |
-          if [ "${{ inputs.confirm }}" != "migrate" ]; then
+          if [ "$MIGRATION_CONFIRM" != "migrate" ]; then
             echo "Confirmation must be exactly: migrate" >&2
             exit 1
           fi

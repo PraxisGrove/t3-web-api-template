@@ -19,7 +19,7 @@ Default principles:
 pnpm install
 cp .env.example .env
 pnpm docker:db
-pnpm db:push
+pnpm db:migrate
 pnpm db:seed
 pnpm dev
 ```
@@ -41,12 +41,14 @@ pnpm fmt
 pnpm lint
 ```
 
-Run database validation when Prisma schema or seed data changes:
+For schema changes, generate and commit a migration with `pnpm db:generate --name your_change`. Run database validation against a disposable database when migrations or seed data change:
 
 ```bash
-pnpm db:push
+pnpm db:migrate
 pnpm db:seed
 ```
+
+CI also runs `scripts/smoke-test.mjs` against the production server and a fresh Docker Compose deployment. The smoke test writes example posts; only point it at a disposable database.
 
 ## Pull Request Guidelines
 

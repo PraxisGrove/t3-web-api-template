@@ -3,18 +3,11 @@ import { PrismaClient } from "../generated/prisma";
 const prisma = new PrismaClient();
 
 async function main() {
-	await prisma.post.upsert({
-		where: {
-			id: 1,
-		},
-		update: {
-			name: "Hello from seed",
-		},
-		create: {
-			id: 1,
-			name: "Hello from seed",
-		},
-	});
+	// Seed an empty template database without overwriting user data or
+	// bypassing the sequence used by subsequent API inserts.
+	if ((await prisma.post.count()) === 0) {
+		await prisma.post.create({ data: { name: "Hello from seed" } });
+	}
 }
 
 main()
