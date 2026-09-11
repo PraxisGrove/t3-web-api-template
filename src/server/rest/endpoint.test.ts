@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createRestMutation, createRestQuery } from "./endpoint";
 
 const mocks = vi.hoisted(() => ({
-	limitRestRequest: vi.fn(),
+	limitRequest: vi.fn(),
 	loggerError: vi.fn(),
 }));
 
@@ -15,14 +15,14 @@ vi.mock("~/server/observability/logger", () => ({
 }));
 
 vi.mock("~/server/security/rate-limit", () => ({
-	limitRestRequest: mocks.limitRestRequest,
+	limitRequest: mocks.limitRequest,
 }));
 
 describe("REST endpoint execution", () => {
 	beforeEach(() => {
 		mocks.loggerError.mockReset();
-		mocks.limitRestRequest.mockReset();
-		mocks.limitRestRequest.mockResolvedValue({
+		mocks.limitRequest.mockReset();
+		mocks.limitRequest.mockResolvedValue({
 			limit: 60,
 			remaining: 59,
 			reset: 123,
@@ -46,14 +46,14 @@ describe("REST endpoint execution", () => {
 		expect(response.status).toBe(200);
 		await expect(response.json()).resolves.toEqual({ data: ["post"] });
 		expect(handler).toHaveBeenCalledOnce();
-		expect(mocks.limitRestRequest).toHaveBeenCalledWith(
+		expect(mocks.limitRequest).toHaveBeenCalledWith(
 			expect.any(Request),
 			"GET /api/v1/posts",
 		);
 	});
 
 	it("returns a rate limit error before running the handler", async () => {
-		mocks.limitRestRequest.mockResolvedValue({
+		mocks.limitRequest.mockResolvedValue({
 			limit: 60,
 			remaining: 0,
 			reset: 456,
@@ -192,6 +192,18 @@ describe("REST endpoint execution", () => {
 			},
 		});
 		expect(mocks.loggerError).toHaveBeenCalledOnce();
+	});
+
+	it("does not execute the handler when the rate limit backend fails", async () => {
+		mocks.limitRequest.mockRejectedValue(new Error("Redis unavailable"));
+		const handler = vi.fn(async () => ({ body: { data: [] } }));
+		const GET = createRestQuery({ route: "GET /api/v1/posts", handler });
+		const response = await GET(new Request("https://example.com/api/v1/posts"));
+		expect(response.status).toBe(500);
+		expect(handler).not.toHaveBeenCalled();
+		await expect(response.json()).resolves.toMatchObject({
+			error: { code: "internal_error", message: "Unexpected server error" },
+		});
 	});
 
 	it("allows handlers to return a Response escape hatch", async () => {

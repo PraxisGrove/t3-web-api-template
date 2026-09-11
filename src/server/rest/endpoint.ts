@@ -3,7 +3,7 @@ import "server-only";
 import type { z } from "zod";
 
 import { withCors } from "~/server/security/cors";
-import { limitRestRequest } from "~/server/security/rate-limit";
+import { limitRequest } from "~/server/security/rate-limit";
 import {
 	jsonError,
 	jsonOk,
@@ -73,7 +73,7 @@ async function runWithRateLimit<TBody>(
 	handler: () => Promise<RestHandlerResult<TBody>>,
 ) {
 	try {
-		const rateLimit = await limitRestRequest(request, route);
+		const rateLimit = await limitRequest(request, route);
 		if (!rateLimit.success) {
 			return jsonError(request, "rate_limited", "Too many requests", 429, {
 				limit: rateLimit.limit,

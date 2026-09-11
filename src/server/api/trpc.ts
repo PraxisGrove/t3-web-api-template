@@ -6,12 +6,13 @@
  * TL;DR - This is where all the tRPC server stuff is created and plugged in. The pieces you will
  * need to use are documented accordingly near the end.
  */
-import { initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { db } from "~/server/db";
 import { logger } from "~/server/observability/logger";
+import { limitRequest } from "~/server/security/rate-limit";
 
 /**
  * 1. CONTEXT
@@ -111,4 +112,19 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  * guarantee that a user querying is authorized, but you can still access user session data if they
  * are logged in.
  */
-export const publicProcedure = t.procedure.use(timingMiddleware);
+const rateLimitMiddleware = t.middleware(async ({ ctx, path, next }) => {
+	// Charge every procedure invocation, including each operation in a batch
+	// and server-side callers. Client-controlled headers cannot skip this.
+	const result = await limitRequest(ctx, `trpc:${path}`);
+	if (!result.success) {
+		throw new TRPCError({
+			code: "TOO_MANY_REQUESTS",
+			message: "Too many requests",
+		});
+	}
+	return next();
+});
+
+export const publicProcedure = t.procedure
+	.use(rateLimitMiddleware)
+	.use(timingMiddleware);

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { isIP } from "node:net";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
@@ -22,7 +23,11 @@ const rateLimitEnabled = env.RATE_LIMIT_ENABLED ?? true;
 const rateLimitRequests = env.RATE_LIMIT_REQUESTS ?? 60;
 const rateLimitWindowSeconds = env.RATE_LIMIT_WINDOW_SECONDS ?? 60;
 const windowMs = rateLimitWindowSeconds * 1000;
-const memoryBuckets = new Map<string, MemoryBucket>();
+const limitInMemory = createMemoryRateLimiter({
+	limit: rateLimitRequests,
+	windowMs,
+	maxBuckets: env.RATE_LIMIT_MAX_BUCKETS ?? 10000,
+});
 
 const upstash =
 	env.UPSTASH_REDIS_REST_URL === undefined ||
@@ -39,20 +44,23 @@ const upstash =
 				),
 			});
 
-export function getClientIp(request: Request) {
-	const forwardedFor = request.headers.get("x-forwarded-for");
-	const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
+export function getClientIp(request: Pick<Request, "headers">) {
+	const header = env.RATE_LIMIT_IP_HEADER ?? "none";
+	if (header === "none") return "unknown";
 
-	return (
-		firstForwardedIp ??
-		request.headers.get("cf-connecting-ip") ??
-		request.headers.get("x-real-ip") ??
-		"unknown"
-	);
+	// Only trust a header overwritten by the deployment's proxy. Do not fall
+	// back to other headers, or accept an unsanitized forwarding chain.
+	const ip = request.headers.get(header)?.trim() ?? "";
+	const version = isIP(ip);
+	if (version === 4) return ip;
+	if (version === 6 && !ip.includes("%")) {
+		return new URL(`http://[${ip}]/`).hostname.slice(1, -1);
+	}
+	return "unknown";
 }
 
-export async function limitRestRequest(
-	request: Request,
+export async function limitRequest(
+	request: Pick<Request, "headers">,
 	route: string,
 ): Promise<RateLimitResult> {
 	if (!rateLimitEnabled) {
@@ -67,33 +75,57 @@ export async function limitRestRequest(
 	const identifier = `${route}:${getClientIp(request)}`;
 
 	if (upstash !== null) {
-		return upstash.limit(identifier);
+		const result = await upstash.limit(identifier);
+		// The SDK permits requests on timeout by default. Keep the API closed
+		// when the shared backend cannot confirm the quota.
+		if (result.reason === "timeout") {
+			throw new Error("Rate limit backend timed out");
+		}
+		return result;
 	}
 
 	logger.debug({ route }, "Using in-memory rate limiter");
 	return limitInMemory(identifier);
 }
 
-function limitInMemory(identifier: string): RateLimitResult {
-	const now = Date.now();
-	const existing = memoryBuckets.get(identifier);
-	const bucket =
-		existing === undefined || existing.reset <= now
-			? {
-					count: 0,
-					reset: now + windowMs,
-				}
-			: existing;
+export function createMemoryRateLimiter(options: {
+	limit: number;
+	windowMs: number;
+	maxBuckets: number;
+}) {
+	const buckets = new Map<string, MemoryBucket>();
+	return (identifier: string): RateLimitResult => {
+		const now = Date.now();
+		// Fixed windows expire in insertion order. Updating a count never moves
+		// its key, so cleanup only visits expired buckets and needs no timer.
+		for (const [key, bucket] of buckets) {
+			if (bucket.reset > now) break;
+			buckets.delete(key);
+		}
 
-	bucket.count += 1;
-	memoryBuckets.set(identifier, bucket);
+		let bucket = buckets.get(identifier);
+		if (bucket === undefined) {
+			if (buckets.size >= options.maxBuckets) {
+				// Reject new identities instead of evicting active limits, which
+				// would let a caller reset its quota by rotating identities.
+				return {
+					limit: options.limit,
+					remaining: 0,
+					reset: buckets.values().next().value?.reset ?? now + options.windowMs,
+					success: false,
+				};
+			}
+			bucket = { count: 0, reset: now + options.windowMs };
+			buckets.set(identifier, bucket);
+		}
 
-	const remaining = Math.max(rateLimitRequests - bucket.count, 0);
-
-	return {
-		limit: rateLimitRequests,
-		remaining,
-		reset: bucket.reset,
-		success: bucket.count <= rateLimitRequests,
+		const success = bucket.count < options.limit;
+		if (success) bucket.count += 1;
+		return {
+			limit: options.limit,
+			remaining: Math.max(options.limit - bucket.count, 0),
+			reset: bucket.reset,
+			success,
+		};
 	};
 }
