@@ -53,18 +53,18 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.12",
 		"@tailwindcss/postcss": "^4.3.3",
-		"@types/node": "^20.19.43",
+		"@types/node": "^26.6.2",
 		"@types/react": "^19.2.18",
 		"@types/react-dom": "^19.2.7",
-		"dotenv": "^17.4.2",
+		"dotenv": "^18.0.1",
 		"lefthook": "^2.1.12",
 		"postcss": "^8.5.28",
-		"prisma": "^6.19.3",
+		"prisma": "^7.10.0",
 		"react-doctor": "^0.9.13",
 		"tailwindcss": "^4.3.3",
 		"tsx": "^4.23.13",
-		"typescript": "^5.9.3",
-		"vitest": "^4.1.11"
+		"typescript": "^7.0.2",
+		"vitest": "^5.0.1"
 	},
 	"ct3aMetadata": {
 		"initVersion": "7.40.0"
