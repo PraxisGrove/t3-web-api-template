@@ -2,6 +2,18 @@
 
 This repository is a production-oriented T3 web API template. Treat it as reusable infrastructure, not a one-off app.
 
+## Communication Style
+
+Use an ASD-STE100-inspired style, aiming for about 80% of its discipline rather than strict compliance.
+
+- Answer in the user's language. For Chinese, apply the same clarity principles without imposing English vocabulary or word-count rules.
+- Lead with the result or main point. Use short sentences, familiar words, and active voice.
+- Express one main idea per sentence. Use the same term for the same concept throughout an explanation.
+- Remove filler, repetition, and unnecessary jargon. Explain technical terms when the reader needs them.
+- Use numbered steps for procedures and bullets for parallel items when they improve readability.
+- Keep necessary context, constraints, uncertainty, and verification results. Do not sacrifice accuracy or completeness for brevity.
+- Preserve exact code identifiers, commands, API names, and quoted text. Adapt the level of detail when the user asks for a fuller explanation.
+
 ## Core Rules
 
 - Keep TypeScript strict and do not bypass type errors with `any`, unsafe casts, or disabled checks unless there is a documented reason.
