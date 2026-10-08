@@ -40,7 +40,7 @@
 		"@trpc/server": "^11.18.0",
 		"@upstash/ratelimit": "^2.0.8",
 		"@upstash/redis": "^1.38.4",
-		"next": "^16.3.4",
+		"next": "^16.3.8",
 		"pino": "^10.3.1",
 		"posthog-js": "^1.428.7",
 		"posthog-node": "^5.51.7",
