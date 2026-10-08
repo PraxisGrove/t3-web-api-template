@@ -210,6 +210,8 @@ The command scans the full project without prompts, remote scoring, or telemetry
 
 ## Database migration workflow
 
+Prisma 6 generates its client in `node_modules`; import it from `@prisma/client`. Next.js automatically externalizes this package, keeping Prisma's dynamic runtime file lookups out of Turbopack's application bundle. After schema changes, run `pnpm exec prisma generate` to refresh the client. Docker copies the generated client with `node_modules`.
+
 `prisma/migrations/20260910000000_init` creates the example Post table. Keep committed migrations as the source of truth:
 
 - New clone or empty database: `pnpm db:migrate`, then optionally `pnpm db:seed`.

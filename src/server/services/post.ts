@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { PrismaClient } from "../../../generated/prisma";
+import type { PrismaClient } from "@prisma/client";
 
 import type { CreatePostInput } from "./post.schema";
 

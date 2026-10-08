@@ -9,6 +9,8 @@ Tag format:
 
 ## Unreleased
 
+- Use the standard Prisma 6 client package entry point so Next.js externalizes its runtime, avoiding Turbopack dynamic filesystem tracing warnings.
+
 - Enable the React Compiler and Turbopack Rust React Compiler in Next.js.
 
 - Add React Doctor as a project dev dependency with an optional local `pnpm react-doctor` diagnostic command.

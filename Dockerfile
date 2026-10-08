@@ -22,7 +22,6 @@ ARG SKIP_ENV_VALIDATION=1
 ENV SKIP_ENV_VALIDATION=$SKIP_ENV_VALIDATION
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/generated ./generated
 COPY . .
 
 RUN pnpm build
